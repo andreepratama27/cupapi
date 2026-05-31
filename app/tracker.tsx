@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_DATA,
@@ -505,7 +506,14 @@ export default function Tracker() {
     <main className="tracker-shell">
       <header className="page-header">
         <div className="brand-mark">
-          <BottleIcon />
+          <Image
+            alt=""
+            className="brand-logo"
+            height={64}
+            loading="eager"
+            src="/brand/cupapi-navbar-logo.png"
+            width={64}
+          />
         </div>
         <div>
           <p className="eyebrow">
