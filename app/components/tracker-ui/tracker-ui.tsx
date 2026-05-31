@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_DATA,
@@ -28,12 +27,6 @@ const fullDate = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
 });
 
-const groupDate = new Intl.DateTimeFormat(undefined, {
-  weekday: "long",
-  month: "short",
-  day: "numeric",
-});
-
 const feedTime = new Intl.DateTimeFormat(undefined, {
   hour: "numeric",
   minute: "2-digit",
@@ -49,6 +42,31 @@ function sameLocalDay(first: Date, second: Date) {
     first.getMonth() === second.getMonth() &&
     first.getDate() === second.getDate()
   );
+}
+
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function fromLocalDateKey(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function offsetLocalDate(value: string, days: number) {
+  const date = fromLocalDateKey(value);
+  date.setDate(date.getDate() + days);
+  return toLocalDateKey(date);
+}
+
+function getHistoryDayLabel(value: string, today: string) {
+  if (value === today) return "Today";
+  if (value === offsetLocalDate(today, -1)) return "Yesterday";
+  if (value === offsetLocalDate(today, 1)) return "Tomorrow";
+  return fullDate.format(fromLocalDateKey(value));
 }
 
 function toDateTimeLocal(date: Date) {
@@ -123,6 +141,27 @@ function ChevronIcon() {
   );
 }
 
+function ArrowIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={`pager-icon ${direction}`}
+      viewBox="0 0 16 16"
+    >
+      <path d="m10 3-5 5 5 5" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg aria-hidden="true" className="calendar-icon" viewBox="0 0 18 18">
+      <path d="M4 2v3M14 2v3M2.5 7h13M4 3.5h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 14 15.5H4A1.5 1.5 0 0 1 2.5 14V5A1.5 1.5 0 0 1 4 3.5Z" />
+      <path d="M5.5 10h2M10.5 10h2M5.5 13h2" />
+    </svg>
+  );
+}
+
 function MoreIcon() {
   return (
     <svg aria-hidden="true" className="more-icon" viewBox="0 0 16 4">
@@ -179,11 +218,7 @@ function Clock() {
     return () => window.clearInterval(id);
   }, []);
 
-  const placeholder: ClockReading = {
-    time: "--:--",
-    meridiem: "",
-    seconds: "--",
-  };
+  const placeholder: ClockReading = { time: "--:--", meridiem: "", seconds: "--" };
   const current = reading ?? placeholder;
   const label = reading
     ? `Current time ${current.time} ${current.meridiem}`
@@ -192,13 +227,14 @@ function Clock() {
   return (
     <div aria-label={label} className="header-clock" suppressHydrationWarning>
       <div className="header-clock-time">
-        <span className="header-clock-pulse" aria-hidden="true" />
-        <span className="header-clock-hm">
-          {current.time}:{current.seconds}
-        </span>
+        <span className="header-clock-hm">{current.time}</span>
         {current.meridiem ? (
           <span className="header-clock-meridiem">{current.meridiem}</span>
         ) : null}
+      </div>
+      <div className="header-clock-sub">
+        <span className="header-clock-pulse" aria-hidden="true" />
+        <span>{current.seconds}s</span>
       </div>
     </div>
   );
@@ -387,7 +423,7 @@ function TimelineGroup({
   );
 }
 
-export default function Tracker() {
+export default function TrackerUI() {
   const [data, setData] = useState<TrackerData>(() =>
     typeof window === "undefined"
       ? DEFAULT_DATA
@@ -403,7 +439,9 @@ export default function Tracker() {
   );
   const [now, setNow] = useState(() => Date.now());
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [showEarlier, setShowEarlier] = useState(false);
+  const [historyDate, setHistoryDate] = useState(() =>
+    toLocalDateKey(new Date()),
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -426,11 +464,14 @@ export default function Tracker() {
   const nextDueAt = getNextDueAt(data.feeds, data.settings.intervalMinutes);
   const dueStatus = getDueStatus(nextDueAt, data.settings.graceMinutes, now);
   const today = new Date(now);
+  const todayKey = toLocalDateKey(today);
   const todaysFeeds = feedStatuses.filter((feed) =>
     sameLocalDay(new Date(feed.occurredAt), today),
   );
-  const earlierFeeds = feedStatuses.filter(
-    (feed) => !sameLocalDay(new Date(feed.occurredAt), today),
+  const historyDay = fromLocalDateKey(historyDate);
+  const historyDayLabel = getHistoryDayLabel(historyDate, todayKey);
+  const historyFeeds = feedStatuses.filter((feed) =>
+    sameLocalDay(new Date(feed.occurredAt), historyDay),
   );
   const averageGap = todaysFeeds.reduce(
     (summary, feed) => {
@@ -442,15 +483,6 @@ export default function Tracker() {
     },
     { total: 0, count: 0 },
   );
-
-  const earlierGroups = (() => {
-    const groups = new Map<string, FeedWithStatus[]>();
-    for (const feed of earlierFeeds) {
-      const label = groupDate.format(new Date(feed.occurredAt));
-      groups.set(label, [...(groups.get(label) ?? []), feed]);
-    }
-    return [...groups.entries()].reverse();
-  })();
 
   function markNow() {
     const feed = createFeed(new Date().toISOString());
@@ -509,14 +541,7 @@ export default function Tracker() {
     <main className="tracker-shell">
       <header className="page-header">
         <div className="brand-mark">
-          <Image
-            alt=""
-            className="brand-logo"
-            height={64}
-            loading="eager"
-            src="/brand/cupapi-navbar-logo.png"
-            width={64}
-          />
+          <BottleIcon />
         </div>
         <div>
           <p className="eyebrow">
@@ -540,9 +565,7 @@ export default function Tracker() {
         {nextDueAt ? (
           <>
             <p className="hero-kicker">{dueTitle}</p>
-            <div className="due-time">
-              {feedTime.format(new Date(nextDueAt))}
-            </div>
+            <div className="due-time">{feedTime.format(new Date(nextDueAt))}</div>
             <p className="countdown">{formatCountdown(nextDueAt, now)}</p>
           </>
         ) : (
@@ -612,39 +635,67 @@ export default function Tracker() {
           </button>
         </div>
 
-        {todaysFeeds.length > 0 ? (
+        <div className="history-pager" aria-label="Drinking history date navigation">
+          <button
+            aria-label="View previous day"
+            className="pager-arrow"
+            onClick={() =>
+              setHistoryDate((current) => offsetLocalDate(current, -1))
+            }
+          >
+            <ArrowIcon direction="left" />
+          </button>
+          <label className="history-date-picker">
+            <CalendarIcon />
+            <span className="history-date-copy">
+              <strong>{historyDayLabel}</strong>
+              <span>{fullDate.format(historyDay)}</span>
+            </span>
+            <input
+              aria-label="Choose drinking history date"
+              onChange={(event) => {
+                if (event.target.value) setHistoryDate(event.target.value);
+              }}
+              type="date"
+              value={historyDate}
+            />
+          </label>
+          <button
+            aria-label="View next day"
+            className="pager-arrow"
+            onClick={() =>
+              setHistoryDate((current) => offsetLocalDate(current, 1))
+            }
+          >
+            <ArrowIcon direction="right" />
+          </button>
+        </div>
+
+        {historyDate !== todayKey ? (
+          <button
+            className="text-button today-shortcut"
+            onClick={() => setHistoryDate(todayKey)}
+          >
+            Back to today
+          </button>
+        ) : null}
+
+        {historyFeeds.length > 0 ? (
           <TimelineGroup
-            entries={todaysFeeds}
-            label="Today"
+            entries={historyFeeds}
+            label={historyDayLabel}
             onEdit={(feed) => setSheet({ type: "edit", feed })}
           />
         ) : (
           <div className="empty-history">
-            <p>No drinks marked today.</p>
-            <span>Use the button above whenever feeding begins.</span>
+            <p>No drinks marked {historyDayLabel.toLowerCase()}.</p>
+            <span>
+              {historyDate > todayKey
+                ? "Come back after drinking begins."
+                : "Use Add manually if you missed a log."}
+            </span>
           </div>
         )}
-
-        {earlierFeeds.length > 0 ? (
-          <button
-            className="earlier-toggle"
-            onClick={() => setShowEarlier((current) => !current)}
-          >
-            <ChevronIcon />
-            {showEarlier ? "Hide earlier activity" : "Show earlier activity"}
-          </button>
-        ) : null}
-
-        {showEarlier
-          ? earlierGroups.map(([label, entries]) => (
-              <TimelineGroup
-                entries={entries}
-                key={label}
-                label={label}
-                onEdit={(feed) => setSheet({ type: "edit", feed })}
-              />
-            ))
-          : null}
       </section>
 
       <details className="settings-section" open={settingsOpen}>
