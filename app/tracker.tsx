@@ -136,6 +136,43 @@ function StatusDot({ status }: { status: FeedStatus }) {
   return <span aria-hidden="true" className={`timeline-dot ${status}`} />;
 }
 
+const clockFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+function ClockIcon() {
+  return (
+    <svg aria-hidden="true" className="clock-icon" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M8 4.5V8l2.5 1.5" />
+    </svg>
+  );
+}
+
+function Clock() {
+  const [time, setTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tick = () => setTime(clockFormatter.format(new Date()));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <div
+      aria-label={time ? `Current time ${time}` : undefined}
+      className="header-clock"
+      suppressHydrationWarning
+    >
+      <ClockIcon />
+      <span>{time ?? "--:--:--"}</span>
+    </div>
+  );
+}
+
 function SheetFrame({
   title,
   children,
@@ -450,6 +487,7 @@ export default function Tracker() {
           <h1>Drinking tracker</h1>
           <p className="date-label">{fullDate.format(today)}</p>
         </div>
+        <Clock />
       </header>
 
       <section className={`hero-card ${dueStatus}`}>

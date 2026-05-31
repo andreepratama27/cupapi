@@ -98,6 +98,35 @@ button {
   pointer-events: none;
 }
 
+.header-clock {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--border);
+  color: var(--peach-deep);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.clock-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--tan);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 h1,
 h2,
 h3,
