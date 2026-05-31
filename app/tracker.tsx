@@ -136,39 +136,66 @@ function StatusDot({ status }: { status: FeedStatus }) {
   return <span aria-hidden="true" className={`timeline-dot ${status}`} />;
 }
 
-const clockFormatter = new Intl.DateTimeFormat(undefined, {
+const clockTimeFormatter = new Intl.DateTimeFormat(undefined, {
   hour: "numeric",
   minute: "2-digit",
+  hour12: true,
+});
+
+const clockSecondsFormatter = new Intl.DateTimeFormat(undefined, {
   second: "2-digit",
 });
 
-function ClockIcon() {
-  return (
-    <svg aria-hidden="true" className="clock-icon" viewBox="0 0 16 16">
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="M8 4.5V8l2.5 1.5" />
-    </svg>
-  );
+type ClockReading = {
+  time: string;
+  meridiem: string;
+  seconds: string;
+};
+
+function readClock(): ClockReading {
+  const now = new Date();
+  const parts = clockTimeFormatter.formatToParts(now);
+  const dayPeriodIndex = parts.findIndex((part) => part.type === "dayPeriod");
+  const timeParts =
+    dayPeriodIndex === -1 ? parts : parts.slice(0, dayPeriodIndex);
+  const time = timeParts
+    .map((part) => part.value)
+    .join("")
+    .trim();
+  const meridiem =
+    dayPeriodIndex === -1 ? "" : parts[dayPeriodIndex].value.toUpperCase();
+  const seconds = clockSecondsFormatter.format(now).padStart(2, "0");
+  return { time, meridiem, seconds };
 }
 
 function Clock() {
-  const [time, setTime] = useState<string | null>(null);
+  const [reading, setReading] = useState<ClockReading | null>(null);
 
   useEffect(() => {
-    const tick = () => setTime(clockFormatter.format(new Date()));
+    const tick = () => setReading(readClock());
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, []);
 
+  const placeholder: ClockReading = { time: "--:--", meridiem: "", seconds: "--" };
+  const current = reading ?? placeholder;
+  const label = reading
+    ? `Current time ${current.time} ${current.meridiem}`
+    : undefined;
+
   return (
-    <div
-      aria-label={time ? `Current time ${time}` : undefined}
-      className="header-clock"
-      suppressHydrationWarning
-    >
-      <ClockIcon />
-      <span>{time ?? "--:--:--"}</span>
+    <div aria-label={label} className="header-clock" suppressHydrationWarning>
+      <div className="header-clock-time">
+        <span className="header-clock-hm">{current.time}</span>
+        {current.meridiem ? (
+          <span className="header-clock-meridiem">{current.meridiem}</span>
+        ) : null}
+      </div>
+      <div className="header-clock-sub">
+        <span className="header-clock-pulse" aria-hidden="true" />
+        <span>{current.seconds}s</span>
+      </div>
     </div>
   );
 }
