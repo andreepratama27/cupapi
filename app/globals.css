@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Storybook Animals theme — warm cream + brown + sage + coral */
+  /* Tema Storybook Animals - krem hangat + cokelat + sage + coral */
   --paper: #fdf6e8;
   --surface: #fff;
   --surface-soft: #faecd0;
@@ -10,15 +10,15 @@
   --ink: #3d2a1a;
   --muted: #8a6f50;
   --muted-light: #c2a878;
-  --peach: #5a8c5a; /* primary action (sage green) */
+  --peach: #5a8c5a; /* aksi utama (hijau sage) */
   --peach-hover: #4a7a4a;
   --peach-shadow: #426a42;
-  --peach-deep: #5a3a22; /* deep brown for brand/links */
+  --peach-deep: #5a3a22; /* cokelat gelap untuk brand/link */
   --sage: #5a8c5a;
   --sage-deep: #3e6a3e;
-  --coral: #d05c3f; /* storybook red — late + due time accent */
+  --coral: #d05c3f; /* merah storybook - aksen terlambat + waktu minum */
   --coral-soft: #fbe5dc;
-  --amber: #f4d35e; /* mustard */
+  --amber: #f4d35e; /* kuning mustard */
   --amber-soft: #fdf0c2;
   --tan: #c9885f;
 }

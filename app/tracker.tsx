@@ -22,19 +22,19 @@ type Sheet =
   | { type: "delete"; feed: FeedEntry }
   | null;
 
-const fullDate = new Intl.DateTimeFormat(undefined, {
+const fullDate = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
   month: "long",
   day: "numeric",
 });
 
-const groupDate = new Intl.DateTimeFormat(undefined, {
+const groupDate = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
   month: "short",
   day: "numeric",
 });
 
-const feedTime = new Intl.DateTimeFormat(undefined, {
+const feedTime = new Intl.DateTimeFormat("id-ID", {
   hour: "numeric",
   minute: "2-digit",
 });
@@ -66,13 +66,13 @@ function createFeed(occurredAt: string): FeedEntry {
 }
 
 function formatGap(minutes: number | null) {
-  if (minutes === null) return "First log";
+  if (minutes === null) return "Catatan pertama";
   const roundedMinutes = Math.round(minutes);
   const hours = Math.floor(roundedMinutes / 60);
   const remainingMinutes = roundedMinutes % 60;
-  if (hours === 0) return `${remainingMinutes}m gap`;
-  if (remainingMinutes === 0) return `${hours}h gap`;
-  return `${hours}h ${remainingMinutes}m gap`;
+  if (hours === 0) return `jeda ${remainingMinutes}mnt`;
+  if (remainingMinutes === 0) return `jeda ${hours}j`;
+  return `jeda ${hours}j ${remainingMinutes}mnt`;
 }
 
 function formatAverageGap(minutes: number | null) {
@@ -80,17 +80,17 @@ function formatAverageGap(minutes: number | null) {
   const roundedMinutes = Math.round(minutes);
   const hours = Math.floor(roundedMinutes / 60);
   const remainingMinutes = roundedMinutes % 60;
-  if (hours === 0) return `${remainingMinutes}m`;
-  if (remainingMinutes === 0) return `${hours}h`;
-  return `${hours}h ${remainingMinutes}m`;
+  if (hours === 0) return `${remainingMinutes}mnt`;
+  if (remainingMinutes === 0) return `${hours}j`;
+  return `${hours}j ${remainingMinutes}mnt`;
 }
 
 function formatCountdown(nextDueAt: number, now: number) {
   const deltaMinutes = Math.ceil(Math.abs(nextDueAt - now) / 60_000);
   const hours = Math.floor(deltaMinutes / 60);
   const minutes = deltaMinutes % 60;
-  const label = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-  return nextDueAt > now ? `in ${label}` : `${label} ago`;
+  const label = hours > 0 ? `${hours}j ${minutes}mnt` : `${minutes}mnt`;
+  return nextDueAt > now ? `dalam ${label}` : `${label} lalu`;
 }
 
 function BottleIcon({ large = false }: { large?: boolean }) {
@@ -137,13 +137,13 @@ function StatusDot({ status }: { status: FeedStatus }) {
   return <span aria-hidden="true" className={`timeline-dot ${status}`} />;
 }
 
-const clockTimeFormatter = new Intl.DateTimeFormat(undefined, {
+const clockTimeFormatter = new Intl.DateTimeFormat("id-ID", {
   hour: "numeric",
   minute: "2-digit",
   hour12: true,
 });
 
-const clockSecondsFormatter = new Intl.DateTimeFormat(undefined, {
+const clockSecondsFormatter = new Intl.DateTimeFormat("id-ID", {
   second: "2-digit",
 });
 
@@ -186,7 +186,7 @@ function Clock() {
   };
   const current = reading ?? placeholder;
   const label = reading
-    ? `Current time ${current.time} ${current.meridiem}`
+    ? `Waktu saat ini ${current.time} ${current.meridiem}`
     : undefined;
 
   return (
@@ -237,7 +237,7 @@ function SheetFrame({
         <div className="sheet-handle" />
         <div className="sheet-heading">
           <h2 id="sheet-title">{title}</h2>
-          <button aria-label="Close" className="icon-button" onClick={onClose}>
+          <button aria-label="Tutup" className="icon-button" onClick={onClose}>
             ×
           </button>
         </div>
@@ -265,7 +265,7 @@ function FeedFormSheet({
 
   return (
     <SheetFrame
-      title={feed ? "Edit drinking time" : "Add drinking time"}
+      title={feed ? "Ubah waktu minum" : "Tambah waktu minum"}
       onClose={onClose}
     >
       <form
@@ -274,18 +274,18 @@ function FeedFormSheet({
           event.preventDefault();
           const selectedTime = new Date(value);
           if (!Number.isFinite(selectedTime.getTime())) {
-            setError("Choose a valid date and time.");
+            setError("Pilih tanggal dan waktu yang valid.");
             return;
           }
           if (selectedTime.getTime() > Date.now() + 60_000) {
-            setError("Drinking time cannot be in the future.");
+            setError("Waktu minum tidak boleh di masa mendatang.");
             return;
           }
           onSave(selectedTime.toISOString());
         }}
       >
         <label className="field">
-          <span>Date and time</span>
+          <span>Tanggal dan waktu</span>
           <input
             autoFocus
             max={toDateTimeLocal(new Date())}
@@ -306,13 +306,13 @@ function FeedFormSheet({
               onClick={onDelete}
               type="button"
             >
-              Delete log
+              Hapus catatan
             </button>
           ) : (
             <span />
           )}
           <button className="button button-small" type="submit">
-            Save time
+            Simpan waktu
           </button>
         </div>
       </form>
@@ -328,16 +328,17 @@ function DeleteSheet({
   onConfirm: () => void;
 }) {
   return (
-    <SheetFrame onClose={onCancel} title="Delete this log?">
+    <SheetFrame onClose={onCancel} title="Hapus catatan ini?">
       <p className="sheet-copy">
-        This changes the schedule and summary. You cannot undo it.
+        Tindakan ini mengubah jadwal dan ringkasan. Tindakan tidak dapat
+        dibatalkan.
       </p>
       <div className="delete-actions">
         <button className="button button-quiet" onClick={onCancel}>
-          Keep log
+          Pertahankan catatan
         </button>
         <button className="button button-danger" onClick={onConfirm}>
-          Delete
+          Hapus
         </button>
       </div>
     </SheetFrame>
@@ -366,15 +367,15 @@ function TimelineGroup({
             <div className="timeline-detail">
               <span className={`status-text ${feed.status}`}>
                 {feed.status === "baseline"
-                  ? "Baseline"
+                  ? "Awal"
                   : feed.status === "late"
-                    ? "Late"
-                    : "On time"}
+                    ? "Terlambat"
+                    : "Tepat waktu"}
               </span>
               <span>{formatGap(feed.gapMinutes)}</span>
             </div>
             <button
-              aria-label={`Edit ${feedTime.format(new Date(feed.occurredAt))} log`}
+              aria-label={`Ubah catatan pukul ${feedTime.format(new Date(feed.occurredAt))}`}
               className="row-action"
               onClick={() => onEdit(feed)}
             >
@@ -490,7 +491,7 @@ export default function Tracker() {
   if (!hydrated) {
     return (
       <main className="tracker-shell">
-        <div className="loading-card" aria-label="Loading tracker" />
+        <div className="loading-card" aria-label="Memuat tracker" />
       </main>
     );
   }
@@ -498,12 +499,12 @@ export default function Tracker() {
   const babyName = data.settings.babyName.trim();
   const dueTitle =
     dueStatus === "empty"
-      ? "Ready when you are"
+      ? "Siap saat Anda siap"
       : dueStatus === "late"
-        ? "A little past due"
+        ? "Sedikit terlambat"
         : dueStatus === "due"
-          ? "It is drinking time"
-          : "Next drinking time";
+          ? "Waktunya minum"
+          : "Waktu minum berikutnya";
 
   return (
     <main className="tracker-shell">
@@ -520,9 +521,9 @@ export default function Tracker() {
         </div>
         <div>
           <p className="eyebrow">
-            {babyName ? `${babyName}'s little log` : "Baby's little log"}
+            {babyName ? `Catatan kecil ${babyName}` : "Catatan kecil bayi"}
           </p>
-          <h1>Drinking tracker</h1>
+          <h1>Tracker minum</h1>
           <p className="date-label">{fullDate.format(today)}</p>
         </div>
         <Clock />
@@ -531,10 +532,16 @@ export default function Tracker() {
       <section className={`hero-card ${dueStatus}`}>
         <div className="hero-status">
           <span className={`status-pill ${dueStatus}`}>
-            {dueStatus === "empty" ? "Start here" : dueStatus}
+            {dueStatus === "empty"
+              ? "Mulai di sini"
+              : dueStatus === "upcoming"
+                ? "Akan datang"
+                : dueStatus === "due"
+                  ? "Waktunya"
+                  : "Terlambat"}
           </span>
           {nextDueAt ? (
-            <span>Every {data.settings.intervalMinutes / 60}h</span>
+            <span>Setiap {data.settings.intervalMinutes / 60} jam</span>
           ) : null}
         </div>
         {nextDueAt ? (
@@ -549,42 +556,42 @@ export default function Tracker() {
           <div className="empty-hero">
             <BottleIcon large />
             <p className="hero-kicker">{dueTitle}</p>
-            <h2>Mark the first drink</h2>
-            <p>Your next schedule appears after the first log.</p>
+            <h2>Catat minum pertama</h2>
+            <p>Jadwal berikutnya muncul setelah catatan pertama.</p>
           </div>
         )}
         <button className="button mark-button" onClick={markNow}>
           <PlusIcon />
-          Mark drinking now
+          Catat minum sekarang
         </button>
       </section>
 
       <section className="summary-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">At a glance</p>
-            <h2>Today</h2>
+            <p className="eyebrow">Sekilas</p>
+            <h2>Hari ini</h2>
           </div>
           <span>
-            {todaysFeeds.length === 1 ? "1 log" : `${todaysFeeds.length} logs`}
+            {todaysFeeds.length} catatan
           </span>
         </div>
         <div className="summary-grid">
           <div>
             <strong>{todaysFeeds.length}</strong>
-            <span>Drinks</span>
+            <span>Minum</span>
           </div>
           <div>
             <strong>
               {todaysFeeds.filter((feed) => feed.status === "on-time").length}
             </strong>
-            <span>On time</span>
+            <span>Tepat waktu</span>
           </div>
           <div>
             <strong>
               {todaysFeeds.filter((feed) => feed.status === "late").length}
             </strong>
-            <span>Late</span>
+            <span>Terlambat</span>
           </div>
           <div>
             <strong>
@@ -592,7 +599,7 @@ export default function Tracker() {
                 averageGap.count ? averageGap.total / averageGap.count : null,
               )}
             </strong>
-            <span>Avg. gap</span>
+            <span>Rata-rata jeda</span>
           </div>
         </div>
       </section>
@@ -600,28 +607,28 @@ export default function Tracker() {
       <section className="history-section">
         <div className="section-heading history-heading">
           <div>
-            <p className="eyebrow">The little details</p>
-            <h2>Drinking history</h2>
+            <p className="eyebrow">Detail kecil</p>
+            <h2>Riwayat minum</h2>
           </div>
           <button
             className="text-button"
             onClick={() => setSheet({ type: "add" })}
           >
             <PlusIcon />
-            Add manually
+            Tambah manual
           </button>
         </div>
 
         {todaysFeeds.length > 0 ? (
           <TimelineGroup
             entries={todaysFeeds}
-            label="Today"
+            label="Hari ini"
             onEdit={(feed) => setSheet({ type: "edit", feed })}
           />
         ) : (
           <div className="empty-history">
-            <p>No drinks marked today.</p>
-            <span>Use the button above whenever feeding begins.</span>
+            <p>Belum ada minum yang dicatat hari ini.</p>
+            <span>Gunakan tombol di atas saat mulai minum.</span>
           </div>
         )}
 
@@ -631,7 +638,9 @@ export default function Tracker() {
             onClick={() => setShowEarlier((current) => !current)}
           >
             <ChevronIcon />
-            {showEarlier ? "Hide earlier activity" : "Show earlier activity"}
+            {showEarlier
+              ? "Sembunyikan aktivitas sebelumnya"
+              : "Tampilkan aktivitas sebelumnya"}
           </button>
         ) : null}
 
@@ -655,8 +664,8 @@ export default function Tracker() {
           }}
         >
           <span>
-            <span className="eyebrow">Personalize</span>
-            <strong>Tracker settings</strong>
+            <span className="eyebrow">Personalisasi</span>
+            <strong>Pengaturan tracker</strong>
           </span>
           <ChevronIcon />
         </summary>
@@ -671,7 +680,7 @@ export default function Tracker() {
         >
           <label className="field">
             <span>
-              Baby name <small>optional</small>
+              Nama bayi <small>opsional</small>
             </span>
             <input
               onChange={(event) =>
@@ -680,14 +689,14 @@ export default function Tracker() {
                   babyName: event.target.value,
                 }))
               }
-              placeholder="Little one"
+              placeholder="Si kecil"
               type="text"
               value={draftSettings.babyName}
             />
           </label>
           <div className="settings-grid">
             <label className="field">
-              <span>Drink every</span>
+              <span>Minum setiap</span>
               <div className="input-with-unit">
                 <input
                   max="1440"
@@ -701,11 +710,11 @@ export default function Tracker() {
                   type="number"
                   value={draftSettings.intervalMinutes}
                 />
-                <span>min</span>
+                <span>mnt</span>
               </div>
             </label>
             <label className="field">
-              <span>Grace period</span>
+              <span>Waktu toleransi</span>
               <div className="input-with-unit">
                 <input
                   max="240"
@@ -721,22 +730,24 @@ export default function Tracker() {
                   type="number"
                   value={draftSettings.graceMinutes}
                 />
-                <span>min</span>
+                <span>mnt</span>
               </div>
             </label>
           </div>
           <div className="settings-actions">
             <span>
-              {settingsSaved ? "Saved locally" : "Stored on this device only"}
+              {settingsSaved
+                ? "Tersimpan secara lokal"
+                : "Hanya tersimpan di perangkat ini"}
             </span>
             <button className="button button-small" type="submit">
-              Save settings
+              Simpan pengaturan
             </button>
           </div>
         </form>
       </details>
 
-      <footer>Your gentle, private record. Stored only on this device.</footer>
+      <footer>Catatan privat yang nyaman. Hanya tersimpan di perangkat ini.</footer>
 
       {sheet?.type === "add" ? (
         <FeedFormSheet onClose={() => setSheet(null)} onSave={saveManualFeed} />

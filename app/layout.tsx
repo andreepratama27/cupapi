@@ -9,8 +9,8 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Baby Drinking Tracker",
-  description: "A gentle, private drinking schedule for your baby.",
+  title: "Tracker Minum Bayi",
+  description: "Jadwal minum bayi yang nyaman dan privat.",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${fredoka.variable} h-full antialiased`}>
+    <html lang="id" className={`${fredoka.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
