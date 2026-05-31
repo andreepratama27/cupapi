@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Fredoka } from "next/font/google";
 import "./globals.css";
 
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito-sans",
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -18,10 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${nunitoSans.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${fredoka.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
