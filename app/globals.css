@@ -684,6 +684,35 @@ input:focus {
   font-size: 11px;
 }
 
+.reset-control {
+  display: flex;
+  margin: 0 2px 18px;
+  padding-top: 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.reset-control strong,
+.reset-control span {
+  display: block;
+}
+
+.reset-control strong {
+  font-size: 13px;
+}
+
+.reset-control span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.reset-control .text-button {
+  flex: 0 0 auto;
+}
+
 .button-small {
   min-height: 40px;
   padding: 0 15px;

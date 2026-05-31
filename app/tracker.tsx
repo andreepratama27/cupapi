@@ -20,6 +20,7 @@ type Sheet =
   | { type: "add" }
   | { type: "edit"; feed: FeedEntry }
   | { type: "delete"; feed: FeedEntry }
+  | { type: "reset" }
   | null;
 
 const fullDate = new Intl.DateTimeFormat("id-ID", {
@@ -345,6 +346,31 @@ function DeleteSheet({
   );
 }
 
+function ResetSheet({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <SheetFrame onClose={onCancel} title="Reset semua data?">
+      <p className="sheet-copy">
+        Semua riwayat minum dan pengaturan akan dihapus dari perangkat ini.
+        Tindakan tidak dapat dibatalkan.
+      </p>
+      <div className="delete-actions">
+        <button className="button button-quiet" onClick={onCancel}>
+          Batal
+        </button>
+        <button className="button button-danger" onClick={onConfirm}>
+          Reset data
+        </button>
+      </div>
+    </SheetFrame>
+  );
+}
+
 function TimelineGroup({
   entries,
   label,
@@ -485,6 +511,15 @@ export default function Tracker() {
       feeds: current.feeds.filter((item) => item.id !== feed.id),
     }));
     setSheet(null);
+    setNow(Date.now());
+  }
+
+  function resetTracker() {
+    setData(DEFAULT_DATA);
+    setDraftSettings(DEFAULT_DATA.settings);
+    setSheet(null);
+    setShowEarlier(false);
+    setSettingsSaved(false);
     setNow(Date.now());
   }
 
@@ -745,6 +780,19 @@ export default function Tracker() {
             </button>
           </div>
         </form>
+        <div className="reset-control">
+          <div>
+            <strong>Mulai dari awal</strong>
+            <span>Hapus seluruh riwayat dan kembalikan pengaturan awal.</span>
+          </div>
+          <button
+            className="text-button danger"
+            onClick={() => setSheet({ type: "reset" })}
+            type="button"
+          >
+            Reset data
+          </button>
+        </div>
       </details>
 
       <footer>Catatan privat yang nyaman. Hanya tersimpan di perangkat ini.</footer>
@@ -765,6 +813,9 @@ export default function Tracker() {
           onCancel={() => setSheet({ type: "edit", feed: sheet.feed })}
           onConfirm={() => deleteFeed(sheet.feed)}
         />
+      ) : null}
+      {sheet?.type === "reset" ? (
+        <ResetSheet onCancel={() => setSheet(null)} onConfirm={resetTracker} />
       ) : null}
     </main>
   );
