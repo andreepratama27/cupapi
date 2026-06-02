@@ -29,7 +29,7 @@ function getPantryId(): string {
   const id = process.env.NEXT_PUBLIC_PANTRY_ID;
   if (!id) {
     throw new SyncError(
-      "Sinkronisasi belum dikonfigurasi. Tambahkan NEXT_PUBLIC_PANTRY_ID ke .env.local.",
+      "Sync is not configured. Set NEXT_PUBLIC_PANTRY_ID in .env.local.",
       "not-configured",
     );
   }
