@@ -889,3 +889,102 @@ footer {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- Sync sheet --- */
+.sync-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sync-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.sync-section header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sync-section header strong {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.sync-section header span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sync-code-display {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px dashed var(--border-strong);
+}
+
+.sync-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sync-code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 26px;
+  letter-spacing: 0.32em;
+  color: var(--peach-deep);
+}
+
+.sync-load-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sync-load-form .button {
+  align-self: flex-end;
+}
+
+.sync-message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sync-message-success {
+  background: rgb(90 140 90 / 12%);
+  color: var(--sage-deep);
+  border: 1px solid rgb(90 140 90 / 25%);
+}
+
+.sync-message-error {
+  background: var(--coral-soft);
+  color: var(--coral);
+  border: 1px solid rgb(208 92 63 / 35%);
+}
+
+.sync-message-info {
+  background: var(--amber-soft);
+  color: var(--peach-deep);
+  border: 1px solid rgb(244 211 94 / 45%);
+}
+
+.sync-footnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}

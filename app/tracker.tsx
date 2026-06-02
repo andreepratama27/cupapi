@@ -15,12 +15,22 @@ import {
   TrackerData,
   TrackerSettings,
 } from "@/lib/tracker";
+import {
+  generateSyncCode,
+  isSyncConfigured,
+  isValidSyncCode,
+  pullFeeds,
+  pushFeeds,
+  SyncError,
+  SYNC_CODE_STORAGE_KEY,
+} from "@/lib/sync";
 
 type Sheet =
   | { type: "add" }
   | { type: "edit"; feed: FeedEntry }
   | { type: "delete"; feed: FeedEntry }
   | { type: "reset" }
+  | { type: "sync" }
   | null;
 
 const fullDate = new Intl.DateTimeFormat("id-ID", {
@@ -371,6 +381,197 @@ function ResetSheet({
   );
 }
 
+function SyncSheet({
+  feeds,
+  onClose,
+  onPulled,
+}: {
+  feeds: FeedEntry[];
+  onClose: () => void;
+  onPulled: (feeds: FeedEntry[]) => void;
+}) {
+  const configured = isSyncConfigured();
+  const [code, setCode] = useState<string>(
+    () => window.localStorage.getItem(SYNC_CODE_STORAGE_KEY) ?? "",
+  );
+  const [loadCode, setLoadCode] = useState("");
+  const [busy, setBusy] = useState<"save" | "load" | null>(null);
+  const [message, setMessage] = useState<
+    { kind: "info" | "success" | "error"; text: string } | null
+  >(null);
+  const [copied, setCopied] = useState(false);
+
+  function rememberCode(value: string) {
+    setCode(value);
+    window.localStorage.setItem(SYNC_CODE_STORAGE_KEY, value);
+  }
+
+  async function handleSave() {
+    if (busy) return;
+    setBusy("save");
+    setMessage(null);
+    try {
+      const usedCode = code || generateSyncCode();
+      await pushFeeds(usedCode, feeds);
+      rememberCode(usedCode);
+      setMessage({
+        kind: "success",
+        text: code
+          ? "Log tersimpan. Perangkat lain akan mendapat versi terbaru."
+          : "Log baru dibuat. Simpan kode di tempat aman.",
+      });
+    } catch (error) {
+      setMessage({
+        kind: "error",
+        text:
+          error instanceof SyncError
+            ? error.message
+            : "Gagal menyimpan log.",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleLoad(event: React.FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    const trimmed = loadCode.trim();
+    if (!isValidSyncCode(trimmed)) {
+      setMessage({ kind: "error", text: "Kode harus berisi 6 digit angka." });
+      return;
+    }
+    setBusy("load");
+    setMessage(null);
+    try {
+      const remoteFeeds = await pullFeeds(trimmed);
+      rememberCode(trimmed);
+      onPulled(remoteFeeds);
+      setLoadCode("");
+      setMessage({
+        kind: "success",
+        text: `Berhasil memuat ${remoteFeeds.length} catatan.`,
+      });
+    } catch (error) {
+      setMessage({
+        kind: "error",
+        text:
+          error instanceof SyncError ? error.message : "Gagal memuat log.",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function copyCode() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <SheetFrame onClose={onClose} title="Sinkronisasi antar perangkat">
+      {!configured ? (
+        <p className="sheet-copy">
+          Sinkronisasi belum aktif. Set <code>NEXT_PUBLIC_PANTRY_ID</code>{" "}
+          pada <code>.env.local</code>, lalu jalankan ulang aplikasi.
+        </p>
+      ) : (
+        <div className="sync-sheet">
+          <section className="sync-section">
+            <header>
+              <strong>Simpan log</strong>
+              <span>
+                Mengganti versi tersimpan dengan riwayat di perangkat ini.
+              </span>
+            </header>
+            {code ? (
+              <div className="sync-code-display">
+                <span className="eyebrow">Kode aktif</span>
+                <div className="sync-code-row">
+                  <code className="sync-code">{code}</code>
+                  <button
+                    className="button button-small button-quiet"
+                    onClick={copyCode}
+                    type="button"
+                  >
+                    {copied ? "Tersalin" : "Salin"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="sheet-copy">
+                Belum ada kode. Tombol di bawah akan membuat kode 6 digit baru.
+              </p>
+            )}
+            <button
+              className="button button-small"
+              disabled={busy !== null}
+              onClick={handleSave}
+              type="button"
+            >
+              {busy === "save"
+                ? "Menyimpan…"
+                : code
+                  ? "Simpan log sekarang"
+                  : "Buat kode & simpan log"}
+            </button>
+          </section>
+
+          <section className="sync-section">
+            <header>
+              <strong>Muat log dari perangkat lain</strong>
+              <span>
+                Riwayat di perangkat ini akan diganti dengan yang tersimpan di
+                kode.
+              </span>
+            </header>
+            <form className="sync-load-form" onSubmit={handleLoad}>
+              <label className="field">
+                <span>Kode 6 digit</span>
+                <input
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  onChange={(event) =>
+                    setLoadCode(event.target.value.replace(/\D/g, ""))
+                  }
+                  pattern="\d{6}"
+                  placeholder="123456"
+                  type="text"
+                  value={loadCode}
+                />
+              </label>
+              <button
+                className="button button-small button-quiet"
+                disabled={busy !== null || loadCode.length !== 6}
+                type="submit"
+              >
+                {busy === "load" ? "Memuat…" : "Muat log"}
+              </button>
+            </form>
+          </section>
+
+          {message ? (
+            <p className={`sync-message sync-message-${message.kind}`}>
+              {message.text}
+            </p>
+          ) : null}
+          <p className="sheet-copy sync-footnote">
+            Data dienkripsi dengan kode sebelum dikirim. Tanpa kode, isi log
+            tidak dapat dibaca siapa pun.
+          </p>
+        </div>
+      )}
+    </SheetFrame>
+  );
+}
+
 function TimelineGroup({
   entries,
   label,
@@ -520,6 +721,12 @@ export default function Tracker() {
     setSheet(null);
     setShowEarlier(false);
     setSettingsSaved(false);
+    setNow(Date.now());
+  }
+
+  function applyPulledFeeds(feeds: FeedEntry[]) {
+    setData((current) => ({ ...current, feeds }));
+    setShowEarlier(false);
     setNow(Date.now());
   }
 
@@ -782,6 +989,21 @@ export default function Tracker() {
         </form>
         <div className="reset-control">
           <div>
+            <strong>Sinkronisasi antar perangkat</strong>
+            <span>
+              Simpan log dengan kode 6 digit, lalu muat di perangkat lain.
+            </span>
+          </div>
+          <button
+            className="text-button"
+            onClick={() => setSheet({ type: "sync" })}
+            type="button"
+          >
+            Buka sinkronisasi
+          </button>
+        </div>
+        <div className="reset-control">
+          <div>
             <strong>Mulai dari awal</strong>
             <span>Hapus seluruh riwayat dan kembalikan pengaturan awal.</span>
           </div>
@@ -816,6 +1038,13 @@ export default function Tracker() {
       ) : null}
       {sheet?.type === "reset" ? (
         <ResetSheet onCancel={() => setSheet(null)} onConfirm={resetTracker} />
+      ) : null}
+      {sheet?.type === "sync" ? (
+        <SyncSheet
+          feeds={data.feeds}
+          onClose={() => setSheet(null)}
+          onPulled={applyPulledFeeds}
+        />
       ) : null}
     </main>
   );
